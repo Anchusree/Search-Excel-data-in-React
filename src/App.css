@@ -1,0 +1,55 @@
+#root {
+  margin: 0;
+  padding: 2px;
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+.exceltable{
+  width: 500px;
+  height: 300px;
+  overflow: scroll;
+}
+.countsales{
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  padding-left: 18px;
+}
+.searchfield{
+  display: flex;
+  justify-content: center;
+}
+.search-form-control{
+   display: block;
+    width: auto;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    background-clip: padding-box;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: var(--bs-border-radius);
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+.removefile{
+  border: none;
+  background: none;
+  font-size: 15px;
+  color: red;
+  font-family: cursive;
+}
+.totalresults{
+  font-size: 17px;
+  font-weight: 600;
+  float: left;
+}
+.totalconsumption{
+  font-size: 17px;
+  font-weight: 600;
+}
