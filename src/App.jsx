@@ -3,7 +3,9 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { isExcelFile } from './Components/Common/Helper';
+import { formatDate, isExcelFile } from './Components/Common/Helper';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 function App() {
 
@@ -19,6 +21,12 @@ function App() {
   const [selectedUnit, setSelectedUnit] = useState()
   const [unitSelectedResults, setUnitSelectedResults] = useState([])
   const [showUnitSearch, setShowUnitSearch] = useState(false)
+  const [dateRange, setDateRange] = useState([null, null]);
+  const [startDate, endDate] = dateRange;
+  const [dateSortResults, setDateSortResults] = useState([])
+  const [showDateSearch, setShowDateSearch] = useState(false)
+  const [totalresults,setTotalResults] = useState(0)
+
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -35,7 +43,7 @@ function App() {
   }
 
   const handleSearch = async () => {
-    setUnitSelectedResults()
+    await setUnitSelectedResults()
     const results = []
     await data2.filter((dataitem) => {
       if (dataitem["Item Description"] &&
@@ -52,18 +60,22 @@ function App() {
     await setSearchResults(results)
     await setSelectedUnit("All")
     await getConsumption(results)
+    await setTotalResults(results.length)
   }
 
   const getConsumption = async (results) => {
-
-    const quantityResults = []
-
-    await results.map((dataitem) => quantityResults.push(dataitem.Quantity))
-
-    let sum = quantityResults.reduce(function (a, b) {
-      return a + b;
-    })
-    await setQtyResults(sum.toFixed(2))
+    if(results.length > 0){
+      const quantityResults = []
+      await results.map((dataitem) => quantityResults.push(dataitem.Quantity))
+      let sum = quantityResults.reduce(function (a, b) {
+        return a + b;
+      })
+      await setQtyResults(sum.toFixed(2))
+    }
+    else{
+      await setQtyResults(0)
+    }
+   
   }
 
   const handleRemoveFile2 = () => {
@@ -78,9 +90,17 @@ function App() {
     setUnits()
     setSelectedUnit()
     setFileData(null)
+    setShowDateSearch(false)
+    setDateSortResults([])
+    setTotalResults(0)
+
   }
 
   const handleSelectedUnit = async () => {
+
+    await setShowDateSearch(false)
+    await setDateSortResults([])
+    await setDateRange([null,null])
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
@@ -95,8 +115,8 @@ function App() {
       })
       await setUnitSelectedResults(results)
       await setShowUnitSearch(true)
-      getConsumption(results)
-
+      await getConsumption(results)
+      await setTotalResults(results.length)
     }
   }
 
@@ -116,10 +136,49 @@ function App() {
     }
   }
 
+  const handleSelectedDate = async () => {
+    if (dateRange.length === 0 || dateRange.length === 1) return
+
+    const datesdata = []
+    await dateRange.map(dates => {
+      const formattedDate = formatDate(dates)//format date to dd/mm/yyyy
+      datesdata.push(formattedDate)
+    })
+    const results = []
+    await setShowDateSearch(true)
+
+    if (selectedUnit === "All") {
+      setShowUnitSearch(false)
+      await searchResults.filter((dataitem) => {
+        const itemDate = dataitem["DocDate"]
+        if (itemDate >= datesdata[0] && itemDate <= datesdata[1]) {
+          results.push(dataitem)
+        }
+      })
+    }
+    else {
+      if (showUnitSearch) {
+        if(unitSelectedResults.length > 0){
+          await unitSelectedResults.filter((dataitem) => {
+            const itemDate = dataitem["DocDate"]
+            if (itemDate >= datesdata[0] && itemDate <= datesdata[1]) {
+              results.push(dataitem)
+            }
+          })
+        }
+        
+      }
+    }
+    await getConsumption(results)
+    await setDateSortResults(results)
+    await setTotalResults(results.length)
+  }
 
   useEffect(() => {
 
   }, [selectedUnit, units, searchTerm])
+
+
 
 
 
@@ -189,9 +248,13 @@ function App() {
         <div className='container'>
           <h2>Search Results for "{searchTerm}"</h2>
           <br />
-          <span className='totalresults'>Total Results : {showUnitSearch ? unitSelectedResults && unitSelectedResults.length : searchResults && searchResults.length}</span>&nbsp;&nbsp;
+          <span className='totalresults'>Total Results : 
+          {totalresults}</span>&nbsp;&nbsp;
           <span className='totalconsumption'>Total Sales Consumption :</span>
-          <span className='countsales'>{`${getQtyResults} Sales`}</span>&nbsp;
+          <span className='countsales'>{`${getQtyResults} Sales`}</span>&nbsp;&nbsp;&nbsp;
+          <button className='btn btn-danger' disabled={totalresults > 0 ? false : true }
+          onClick={() => DownloadExcelResults(showUnitSearch,showDateSearch, searchResults, unitSelectedResults,dateSortResults, selectedUnit, getQtyResults, XLSX)}
+          >Download Results</button>
           <br /><br />
 
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
@@ -214,17 +277,27 @@ function App() {
               )
             }
             {
-              units && (<button className='btn btn-secondary' onClick={handleSelectedUnit}>Filter</button>)
+              units && (<button className='btn btn-secondary' onClick={handleSelectedUnit}>Sort by Unit</button>)
             }
-            <button className='btn btn-danger' onClick={() => DownloadExcelResults(showUnitSearch, searchResults, unitSelectedResults, selectedUnit, getQtyResults, XLSX)}
-            >Download Results</button>
+            <DatePicker
+              placeholderText='Sort by Date'
+              dateFormat="dd/MM/yyyy"
+              selectsRange={true}
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(update) => {
+                setDateRange(update);
+              }}
+              isClearable={true}
+            />
+            {
+              <button className='btn btn-secondary' onClick={handleSelectedDate}>Sort by Date</button>
+            }
           </div>
-
           <hr />
-
           <div style={{ width: "1000px", height: "500px", overflow: 'scroll', marginBottom: '10%' }} className="table-responsive">
             {
-              showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0
+              showUnitSearch === true && showDateSearch === false && unitSelectedResults && unitSelectedResults.length > 0
                 ?
                 <table className="table table-striped table-bordered">
                   <thead>
@@ -245,24 +318,50 @@ function App() {
                   </tbody>
                 </table>
                 :
-                <table className="table table-striped table-bordered">
-                  <thead>
-                    <tr>
-                      {Object.keys(searchResults[0]).map((header, index) => (
-                        <th key={index}>{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {searchResults.map((search, index) => (
-                      <tr key={index}>
-                        {Object.values(search).map((cell, index) => (
-                          <td key={index}>{cell}</td>
+                showDateSearch
+                  ?
+                    dateSortResults && dateSortResults.length > 0
+                    ?
+                    <table className="table table-striped table-bordered">
+                    <thead>
+                      <tr>
+                        {Object.keys(dateSortResults && dateSortResults[0]).map((header, index) => (
+                          <th key={index}>{header}</th>
                         ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {dateSortResults && dateSortResults.map((search, index) => (
+                        <tr key={index}>
+                          {Object.values(search).map((cell, index) => (
+                            <td key={index}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                    :
+                    <p className='noresult'>No Results Found!</p>
+                
+                  :
+                  <table className="table table-striped table-bordered">
+                    <thead>
+                      <tr>
+                        {Object.keys(searchResults[0]).map((header, index) => (
+                          <th key={index}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {searchResults.map((search, index) => (
+                        <tr key={index}>
+                          {Object.values(search).map((cell, index) => (
+                            <td key={index}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
             }
 
           </div>
