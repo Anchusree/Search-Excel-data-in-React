@@ -1,5 +1,5 @@
 
-export const DownloadExcelResults = (showUnitSearch,searchResults,unitSelectedResults,selectedUnit,getQtyResults,XLSX)=>{
+export const DownloadExcelResults = (showUnitSearch,showDateSearch,searchResults,unitSelectedResults,dateSortResults,selectedUnit,getQtyResults,XLSX)=>{
     if (searchResults.length === 0) {
         return;
     }
@@ -15,8 +15,18 @@ export const DownloadExcelResults = (showUnitSearch,searchResults,unitSelectedRe
             Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
         };
     }
-    if(showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0){
+    else if(showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0 && showDateSearch === false){
         keyValues = unitSelectedResults && unitSelectedResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
+            BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
+        }));
+        totalRow = {
+            BranchName:'',ItemCode:'',ItemDescription:'',DocCode:'',DocDate:'',Customer:'',
+            Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
+        };
+    }
+
+    else if(showDateSearch === true && dateSortResults && dateSortResults.length > 0){
+        keyValues = dateSortResults && dateSortResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
             BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
         }));
         totalRow = {
