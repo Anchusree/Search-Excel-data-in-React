@@ -6,7 +6,7 @@ export const DownloadExcelResults = (showUnitSearch,searchResults,unitSelectedRe
     let keyValues
     let totalRow
 
-    if(!showUnitSearch) {
+    if(showUnitSearch === false || selectedUnit === "All") {
         keyValues = searchResults && searchResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
             BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
         }));
@@ -15,7 +15,7 @@ export const DownloadExcelResults = (showUnitSearch,searchResults,unitSelectedRe
             Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
         };
     }
-    if(unitSelectedResults && unitSelectedResults.length > 0){
+    if(showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0){
         keyValues = unitSelectedResults && unitSelectedResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
             BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
         }));
