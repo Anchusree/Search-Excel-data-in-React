@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { formatDate, isExcelFile } from './Components/Common/Helper';
+import { formatDate, getFormatDateString, isExcelFile } from './Components/Common/Helper';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -25,7 +25,7 @@ function App() {
   const [startDate, endDate] = dateRange;
   const [dateSortResults, setDateSortResults] = useState([])
   const [showDateSearch, setShowDateSearch] = useState(false)
-  const [totalresults,setTotalResults] = useState(0)
+  const [totalresults, setTotalResults] = useState(0)
 
 
   const handleFileUpload2 = (e) => {
@@ -64,7 +64,7 @@ function App() {
   }
 
   const getConsumption = async (results) => {
-    if(results.length > 0){
+    if (results.length > 0) {
       const quantityResults = []
       await results.map((dataitem) => quantityResults.push(dataitem.Quantity))
       let sum = quantityResults.reduce(function (a, b) {
@@ -72,10 +72,10 @@ function App() {
       })
       await setQtyResults(sum.toFixed(2))
     }
-    else{
+    else {
       await setQtyResults(0)
     }
-   
+
   }
 
   const handleRemoveFile2 = () => {
@@ -93,6 +93,7 @@ function App() {
     setShowDateSearch(false)
     setDateSortResults([])
     setTotalResults(0)
+    setDateRange([null, null])
 
   }
 
@@ -100,7 +101,7 @@ function App() {
 
     await setShowDateSearch(false)
     await setDateSortResults([])
-    await setDateRange([null,null])
+    await setDateRange([null, null])
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
@@ -137,13 +138,9 @@ function App() {
   }
 
   const handleSelectedDate = async () => {
+   
     if (dateRange.length === 0 || dateRange.length === 1) return
 
-    const datesdata = []
-    await dateRange.map(dates => {
-      const formattedDate = formatDate(dates)//format date to dd/mm/yyyy
-      datesdata.push(formattedDate)
-    })
     const results = []
     await setShowDateSearch(true)
 
@@ -151,22 +148,26 @@ function App() {
       setShowUnitSearch(false)
       await searchResults.filter((dataitem) => {
         const itemDate = dataitem["DocDate"]
-        if (itemDate >= datesdata[0] && itemDate <= datesdata[1]) {
+        const dateObject = getFormatDateString(itemDate)
+        if (dateObject >= startDate && dateObject <= endDate) {
           results.push(dataitem)
         }
       })
+  
     }
     else {
       if (showUnitSearch) {
-        if(unitSelectedResults.length > 0){
+        if (unitSelectedResults.length > 0) {
           await unitSelectedResults.filter((dataitem) => {
             const itemDate = dataitem["DocDate"]
-            if (itemDate >= datesdata[0] && itemDate <= datesdata[1]) {
+            const dateObject = getFormatDateString(itemDate)
+            if (dateObject >= startDate && dateObject <= endDate) {
+              // console.log(dataitem);
               results.push(dataitem)
             }
           })
         }
-        
+
       }
     }
     await getConsumption(results)
@@ -177,9 +178,6 @@ function App() {
   useEffect(() => {
 
   }, [selectedUnit, units, searchTerm])
-
-
-
 
 
   return (
@@ -248,12 +246,12 @@ function App() {
         <div className='container'>
           <h2>Search Results for "{searchTerm}"</h2>
           <br />
-          <span className='totalresults'>Total Results : 
-          {totalresults}</span>&nbsp;&nbsp;
+          <span className='totalresults'>Total Results :
+            {totalresults}</span>&nbsp;&nbsp;
           <span className='totalconsumption'>Total Sales Consumption :</span>
           <span className='countsales'>{`${getQtyResults} Sales`}</span>&nbsp;&nbsp;&nbsp;
-          <button className='btn btn-danger' disabled={totalresults > 0 ? false : true }
-          onClick={() => DownloadExcelResults(showUnitSearch,showDateSearch, searchResults, unitSelectedResults,dateSortResults, selectedUnit, getQtyResults, XLSX)}
+          <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
+            onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, searchResults, unitSelectedResults, dateSortResults, selectedUnit, getQtyResults, XLSX)}
           >Download Results</button>
           <br /><br />
 
@@ -320,29 +318,29 @@ function App() {
                 :
                 showDateSearch
                   ?
-                    dateSortResults && dateSortResults.length > 0
+                  dateSortResults && dateSortResults.length > 0
                     ?
                     <table className="table table-striped table-bordered">
-                    <thead>
-                      <tr>
-                        {Object.keys(dateSortResults && dateSortResults[0]).map((header, index) => (
-                          <th key={index}>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dateSortResults && dateSortResults.map((search, index) => (
-                        <tr key={index}>
-                          {Object.values(search).map((cell, index) => (
-                            <td key={index}>{cell}</td>
+                      <thead>
+                        <tr>
+                          {Object.keys(dateSortResults && dateSortResults[0]).map((header, index) => (
+                            <th key={index}>{header}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {dateSortResults && dateSortResults.map((search, index) => (
+                          <tr key={index}>
+                            {Object.values(search).map((cell, index) => (
+                              <td key={index}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                     :
                     <p className='noresult'>No Results Found!</p>
-                
+
                   :
                   <table className="table table-striped table-bordered">
                     <thead>
