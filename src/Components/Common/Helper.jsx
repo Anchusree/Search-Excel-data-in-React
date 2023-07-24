@@ -22,3 +22,10 @@ export const totalResultsCount = (results)=>{
     return results.length
 }
 
+export const getFormatDateString = (itemDate)=>{
+    const dateParts = itemDate.split("/");
+    const formattedDateString = `${dateParts[1]}/${dateParts[0]}/${dateParts[2]}`;
+    return new Date(formattedDateString)
+
+}
+
