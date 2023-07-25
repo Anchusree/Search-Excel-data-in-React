@@ -35,7 +35,6 @@ function App() {
     if (isExcelFile(file) && file.size != 0) {
       setFileData(file)
       setFile2Name(file.name)
-
     }
     else {
       alert("Upload valid excel file")
@@ -75,7 +74,6 @@ function App() {
     else {
       await setQtyResults(0)
     }
-
   }
 
   const handleRemoveFile2 = () => {
@@ -94,7 +92,6 @@ function App() {
     setDateSortResults([])
     setTotalResults(0)
     setDateRange([null, null])
-
   }
 
   const handleSelectedUnit = async () => {
@@ -153,7 +150,6 @@ function App() {
           results.push(dataitem)
         }
       })
-  
     }
     else {
       if (showUnitSearch) {
@@ -246,13 +242,16 @@ function App() {
         <div className='container'>
           <h2>Search Results for "{searchTerm}"</h2>
           <br />
-          <span className='totalresults'>Total Results :
-            {totalresults}</span>&nbsp;&nbsp;
-          <span className='totalconsumption'>Total Sales Consumption :</span>
-          <span className='countsales'>{`${getQtyResults} Sales`}</span>&nbsp;&nbsp;&nbsp;
+          <div className='head2'>
+          <span className='totalresults'>Total Results : {totalresults}</span>&nbsp;&nbsp;
+          <span className='totalconsumption'>Total Sales Consumption :  {`${getQtyResults} Sales`}</span>
           <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
             onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, searchResults, unitSelectedResults, dateSortResults, selectedUnit, getQtyResults, XLSX)}
           >Download Results</button>
+
+          </div>
+
+        
           <br /><br />
 
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>

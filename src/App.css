@@ -45,16 +45,21 @@
   font-family: cursive;
 }
 .totalresults{
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   float: left;
 }
 .totalconsumption{
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
 }
 .noresult{
   font-size: 20px;
   text-align: center;
   padding: 35px;
+}
+.head2{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
