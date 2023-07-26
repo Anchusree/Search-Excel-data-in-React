@@ -197,13 +197,14 @@ function App() {
         result[key] = unitPerKgList[key] * inputValues[key];
       }
     }
+
     let sum = 0;
     for (const key in result) {
       if (result.hasOwnProperty(key)) {
         sum += result[key];
       }
     }
-    setTotalUnitInKg(sum)
+    setTotalUnitInKg(sum.toFixed(2))
   }
 
   // Function to handle input value change
@@ -214,7 +215,7 @@ function App() {
     }
     else {
       if (updatedInputValues[key] !== "") {
-        updatedInputValues[key] = parseFloat(event.target.value)
+        updatedInputValues[key] = event.target.value
       }
       else {
         updatedInputValues[key] = null
