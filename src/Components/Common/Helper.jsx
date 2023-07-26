@@ -29,3 +29,11 @@ export const getFormatDateString = (itemDate)=>{
 
 }
 
+export const getTotalQuantityByUnit = (results)=>
+    results.reduce((accumulator, item) => {
+        const { Unit, Quantity } = item;
+        accumulator[Unit] = (accumulator[Unit] || 0) + Quantity;
+        return accumulator;
+      }, {});
+
+

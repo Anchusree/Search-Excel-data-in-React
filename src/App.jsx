@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { formatDate, getFormatDateString, isExcelFile } from './Components/Common/Helper';
+import { getFormatDateString, getTotalQuantityByUnit, isExcelFile } from './Components/Common/Helper';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -18,7 +18,7 @@ function App() {
   const [file2Name, setFile2Name] = useState(null);
   const [first10Lines_F2, setFirst10Lines_F2] = useState([]);//get 10 lines of data for display
   const [units, setUnits] = useState()
-  const [selectedUnit, setSelectedUnit] = useState()
+  const [selectedUnit, setSelectedUnit] = useState("All")
   const [unitSelectedResults, setUnitSelectedResults] = useState([])
   const [showUnitSearch, setShowUnitSearch] = useState(false)
   const [dateRange, setDateRange] = useState([null, null]);
@@ -26,7 +26,11 @@ function App() {
   const [dateSortResults, setDateSortResults] = useState([])
   const [showDateSearch, setShowDateSearch] = useState(false)
   const [totalresults, setTotalResults] = useState(0)
-
+  const [showCalculate, setShowCalculate] = useState(true)
+  const [qtyBasedUnits, setQtyBasedUnits] = useState([])
+  const [inputValues, setInputValues] = useState({});
+  const [unitPerKgList, setUnitPerKgList] = useState({})
+  const [totalUnitInKg, setTotalUnitInKg] = useState(0)
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -43,6 +47,7 @@ function App() {
 
   const handleSearch = async () => {
     await setUnitSelectedResults()
+    await setShowCalculate(true)
     const results = []
     await data2.filter((dataitem) => {
       if (dataitem["Item Description"] &&
@@ -60,6 +65,11 @@ function App() {
     await setSelectedUnit("All")
     await getConsumption(results)
     await setTotalResults(results.length)
+
+    if (selectedUnit === "All") {
+      const quantityUnit = getTotalQuantityByUnit(results)
+      setQtyBasedUnits(quantityUnit)
+    }
   }
 
   const getConsumption = async (results) => {
@@ -92,6 +102,12 @@ function App() {
     setDateSortResults([])
     setTotalResults(0)
     setDateRange([null, null])
+    setQtyBasedUnits([])
+    setInputValues({})
+    setShowCalculate(false)
+    setTotalUnitInKg(0)
+    setUnitPerKgList({})
+    setQtyResults(0)
   }
 
   const handleSelectedUnit = async () => {
@@ -99,12 +115,16 @@ function App() {
     await setShowDateSearch(false)
     await setDateSortResults([])
     await setDateRange([null, null])
+    await setInputValues({})
+    await setTotalUnitInKg(0)
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
       getConsumption(searchResults)
+      setShowCalculate(true)
     }
     else {
+      setShowCalculate(false)
       const results = []
       await searchResults.filter((dataitem) => {
         if (dataitem["Unit"] === selectedUnit) {
@@ -135,9 +155,8 @@ function App() {
   }
 
   const handleSelectedDate = async () => {
-   
-    if (dateRange.length === 0 || dateRange.length === 1) return
 
+    if (dateRange.length === 0 || dateRange.length === 1) return
     const results = []
     await setShowDateSearch(true)
 
@@ -163,7 +182,6 @@ function App() {
             }
           })
         }
-
       }
     }
     await getConsumption(results)
@@ -171,8 +189,56 @@ function App() {
     await setTotalResults(results.length)
   }
 
-  useEffect(() => {
+  const handleUnitCalculate = () => {
+    const result = {};
+    for (const key in unitPerKgList) {
+      if (unitPerKgList.hasOwnProperty(key) && inputValues.hasOwnProperty(key)) {
+        // Multiply the values from both objects with the matching key
+        result[key] = unitPerKgList[key] * inputValues[key];
+      }
+    }
+    let sum = 0;
+    for (const key in result) {
+      if (result.hasOwnProperty(key)) {
+        sum += result[key];
+      }
+    }
+    setTotalUnitInKg(sum)
+  }
 
+  // Function to handle input value change
+  const handleInputChange = (event, key, val) => {
+    const updatedInputValues = { ...inputValues };
+    if (key === "KG") {
+      updatedInputValues["KG"] = 1
+    }
+    else {
+      if (updatedInputValues[key] !== "") {
+        updatedInputValues[key] = parseFloat(event.target.value)
+      }
+      else {
+        updatedInputValues[key] = null
+      }
+    }
+    setInputValues(updatedInputValues);
+    const updatedValues = { ...unitPerKgList };
+    updatedValues[key] = val
+    setUnitPerKgList(updatedValues)
+  }
+
+  const areInputValuesValid = () => {
+    if (Object.keys(inputValues).length === 0) return true
+    for (const key in inputValues) {
+      if (inputValues.hasOwnProperty(key)) {
+        if (inputValues[key] === null || isNaN(inputValues[key])) {
+          return true
+        }
+      }
+    }
+    return false;
+  };
+
+  useEffect(() => {
   }, [selectedUnit, units, searchTerm])
 
 
@@ -183,7 +249,7 @@ function App() {
       <div style={{ display: "flex", justifyContent: "center", flexDirection: 'column' }}>
         <br />
         <div className="mb-3">
-          <label htmlFor="formFile" className="form-label">Upload excel file (Sales Data)</label>
+          <label htmlFor="formFile" className="form-label">Upload excel file</label>
           <input className="form-control" type="file" id="formFile" accept=".xlsx,.xls"
             onChange={handleFileUpload2} multiple={false} ref={fileRef2} />
           {file2Name && (
@@ -236,24 +302,20 @@ function App() {
         )}
       </div>
 
-
       {/* <br /><br /> */}
-      {searchResults && searchResults.length > 0 && (
+      {searchResults && searchResults.length > 0 ? (
         <div className='container'>
           <h2>Search Results for "{searchTerm}"</h2>
           <br />
           <div className='head2'>
-          <span className='totalresults'>Total Results : {totalresults}</span>&nbsp;&nbsp;
-          <span className='totalconsumption'>Total Sales Consumption :  {`${getQtyResults} Sales`}</span>
-          <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
-            onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, searchResults, unitSelectedResults, dateSortResults, selectedUnit, getQtyResults, XLSX)}
-          >Download Results</button>
+            <span className='totalresults'>Total Results : {totalresults}</span>&nbsp;&nbsp;
+            <span className='totalconsumption'>Total Sales Consumption :  {`${getQtyResults} Sales`}</span>
+            <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
+              onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, searchResults, unitSelectedResults, dateSortResults, selectedUnit, getQtyResults, XLSX)}
+            >Download Results</button>
 
           </div>
-
-        
           <br /><br />
-
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
 
             <div className="form-check">
@@ -265,7 +327,7 @@ function App() {
               units && units.map((unit, index) =>
                 <div className="form-check" key={index}>
                   <input className="form-check-input" type="radio" name={unit}
-                    id={unit} checked={selectedUnit === unit}
+                    checked={selectedUnit === unit}
                     onChange={(e) => setSelectedUnit(e.target.value)} value={unit} />
                   <label className="form-check-label" htmlFor={unit}>
                     {unit}
@@ -288,9 +350,39 @@ function App() {
               isClearable={true}
             />
             {
-              <button className='btn btn-secondary' onClick={handleSelectedDate}>Sort by Date</button>
+              <button className='btn btn-secondary' disabled={startDate == null ? true : false}
+                onClick={handleSelectedDate}>Sort by Date</button>
             }
           </div>
+          <br />
+          {
+            showCalculate && (
+              <div className="horizontal-list">
+                <h6>Total Counts :</h6>
+                <ul>
+                  {
+                    qtyBasedUnits && Object.entries(qtyBasedUnits).map(([key, val], index) =>
+                      <div key={key} style={{ display: 'flex', marginBottom: '5px', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ fontWeight: 600 }}>{key} : {val.toFixed(2)}</span> &nbsp;
+                        <input
+                          type="number"
+                          placeholder='Enter input'
+                          id={key}
+                          value={inputValues[key] || ''}
+                          onChange={(event) => handleInputChange(event, key, val)}
+                          min="0"
+                        />
+                      </div>
+                    )
+                  }
+                </ul>
+                <button type='submit' className='btn btn-success calculatebtn' disabled={areInputValuesValid()}
+                  onClick={() => handleUnitCalculate()}>Calculate</button>
+                {totalUnitInKg > 0 ? <span className='totalconsumption'>Total Sales By Unit(Kg) : {totalUnitInKg}</span> : null}
+              </div>
+            )
+          }
+
           <hr />
           <div style={{ width: "1000px", height: "500px", overflow: 'scroll', marginBottom: '10%' }} className="table-responsive">
             {
@@ -360,10 +452,20 @@ function App() {
                     </tbody>
                   </table>
             }
-
           </div>
         </div>
-      )}
+      )
+        :
+        searchTerm && searchResults.length === 0
+          ?
+          <div style={{ marginBottom: '26%' }}>
+            <h2>Search Results for "{searchTerm}"</h2>
+            <br />
+            <p className='noresult'>No Results Found!</p>
+          </div>
+          :
+          null
+      }
 
     </div>
   )
