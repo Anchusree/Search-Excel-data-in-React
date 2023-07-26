@@ -54,7 +54,7 @@
   font-weight: 600;
 }
 .noresult{
-  font-size: 20px;
+  font-size: 25px;
   text-align: center;
   padding: 35px;
 }
@@ -62,4 +62,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.horizontal-list{
+  display: flex;
+  justify-content: flex-start;
+  }
+.horizontal-list li {
+  /* display: inline; */
+  margin-right: 10px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+}
+.calculatebtn{
+  width: fit-content;
+  height: 40px;
+  margin: 15px;
 }
