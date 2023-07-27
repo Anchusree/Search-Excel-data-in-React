@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { getFormatDateString, getTotalQuantityByUnit, isExcelFile } from './Components/Common/Helper';
+import { getConsumptionResult, getFormatDateString, getTotalQuantityByUnit, getUniqueItems, getUniqueUnits, isExcelFile } from './Components/Common/Helper';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -16,7 +16,7 @@ function App() {
   const fileRef2 = useRef()
   const [fileData, setFileData] = useState(null)
   const [file2Name, setFile2Name] = useState(null);
-  const [first10Lines_F2, setFirst10Lines_F2] = useState([]);//get 10 lines of data for display
+  const [first10Lines_F2, setFirst10Lines_F2] = useState([]);//get 5 lines of data for display
   const [units, setUnits] = useState()
   const [selectedUnit, setSelectedUnit] = useState("All")
   const [unitSelectedResults, setUnitSelectedResults] = useState([])
@@ -31,6 +31,11 @@ function App() {
   const [inputValues, setInputValues] = useState({});
   const [unitPerKgList, setUnitPerKgList] = useState({})
   const [totalUnitInKg, setTotalUnitInKg] = useState(0)
+  const [selectItemOptions, setSelectItemOptions] = useState([])
+  const [selectedItem, setSelectedItem] = useState('')
+  const [itemSelectedResults, setItemSelectedResults] = useState([])
+  const [showItemSearch, setShowItemSearch] = useState(false)
+  const [noresult, setNoResult] = useState(false)
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -54,12 +59,16 @@ function App() {
         (dataitem["Item Description"].toLowerCase().startsWith(searchTerm.toLowerCase()) ||
           dataitem["Item Description"].toLowerCase().includes(searchTerm.toLowerCase()))) {
         results.push(dataitem)
+        setNoResult(false)
+      }
+      else {
+        setNoResult(true)
       }
     })
-    //get unique units
-    const uniqueUnitArray = new Set(results.map(item => item.Unit));
-    // Convert the Set back to an array
-    const uniqueUnitsArray = Array.from(uniqueUnitArray);
+    const uniqueUnitsArray = getUniqueUnits(results)
+    const uniqueItemsArray = getUniqueItems(results)
+
+    await setSelectItemOptions(uniqueItemsArray)
     await setUnits(uniqueUnitsArray)
     await setSearchResults(results)
     await setSelectedUnit("All")
@@ -71,15 +80,10 @@ function App() {
       setQtyBasedUnits(quantityUnit)
     }
   }
-
   const getConsumption = async (results) => {
     if (results.length > 0) {
-      const quantityResults = []
-      await results.map((dataitem) => quantityResults.push(dataitem.Quantity))
-      let sum = quantityResults.reduce(function (a, b) {
-        return a + b;
-      })
-      await setQtyResults(sum.toFixed(2))
+      const qtyresult = getConsumptionResult(results)
+      await setQtyResults(qtyresult.toFixed(2))
     }
     else {
       await setQtyResults(0)
@@ -108,33 +112,52 @@ function App() {
     setTotalUnitInKg(0)
     setUnitPerKgList({})
     setQtyResults(0)
+    setShowItemSearch(false)
+    setItemSelectedResults([])
+    setSelectedItem('')
+    setSelectItemOptions([])
+    setNoResult(false)
   }
 
   const handleSelectedUnit = async () => {
 
+    let uniqueItemsOptions = null
+
     await setShowDateSearch(false)
+    await setShowItemSearch(false)
+    await setSelectedItem('')
     await setDateSortResults([])
     await setDateRange([null, null])
     await setInputValues({})
     await setTotalUnitInKg(0)
+    await setItemSelectedResults([])
+    await setSelectedItem('')
+
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
       getConsumption(searchResults)
       setShowCalculate(true)
+      const quantityUnit = getTotalQuantityByUnit(searchResults)
+      setQtyBasedUnits(quantityUnit)
+      uniqueItemsOptions = getUniqueItems(searchResults)
+      setSelectItemOptions(uniqueItemsOptions)
     }
     else {
       setShowCalculate(false)
+      setQtyBasedUnits([])
       const results = []
       await searchResults.filter((dataitem) => {
         if (dataitem["Unit"] === selectedUnit) {
           results.push(dataitem)
         }
       })
+      uniqueItemsOptions = getUniqueItems(results)
       await setUnitSelectedResults(results)
       await setShowUnitSearch(true)
       await getConsumption(results)
       await setTotalResults(results.length)
+      await setSelectItemOptions(uniqueItemsOptions)
     }
   }
 
@@ -158,7 +181,10 @@ function App() {
 
     if (dateRange.length === 0 || dateRange.length === 1) return
     const results = []
+    let uniqueItemOptions = null
     await setShowDateSearch(true)
+    await setShowItemSearch(false)
+    await setSelectedItem('')
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
@@ -169,6 +195,7 @@ function App() {
           results.push(dataitem)
         }
       })
+      uniqueItemOptions = getUniqueItems(results)
     }
     else {
       if (showUnitSearch) {
@@ -177,16 +204,20 @@ function App() {
             const itemDate = dataitem["DocDate"]
             const dateObject = getFormatDateString(itemDate)
             if (dateObject >= startDate && dateObject <= endDate) {
-              // console.log(dataitem);
               results.push(dataitem)
             }
           })
+          uniqueItemOptions = getUniqueItems(results)
         }
       }
     }
+
     await getConsumption(results)
     await setDateSortResults(results)
     await setTotalResults(results.length)
+    await setSelectItemOptions(uniqueItemOptions)
+    const quantityUnit = getTotalQuantityByUnit(results)
+    await setQtyBasedUnits(quantityUnit)
   }
 
   const handleUnitCalculate = () => {
@@ -207,7 +238,6 @@ function App() {
     setTotalUnitInKg(sum.toFixed(2))
   }
 
-  // Function to handle input value change
   const handleInputChange = (event, key, val) => {
     const updatedInputValues = { ...inputValues };
     if (key === "KG") {
@@ -239,9 +269,63 @@ function App() {
     return false;
   };
 
-  useEffect(() => {
-  }, [selectedUnit, units, searchTerm])
+  const handleSortByItem = async () => {
+    await setShowItemSearch(true)
 
+    const results = []
+    if (selectedUnit === "All") {
+      if (showDateSearch) {
+        if (dateSortResults.length > 0) {
+          await dateSortResults && dateSortResults.filter((dataitem) => {
+            if (dataitem["Item Description"] === selectedItem) {
+              results.push(dataitem)
+            }
+          })
+          setShowDateSearch(false)
+        }
+      }
+      else {
+        await searchResults.filter((dataitem) => {
+          if (dataitem["Item Description"] === selectedItem) {
+            results.push(dataitem)
+          }
+        })
+      }
+    }
+
+    else {
+
+      if (showDateSearch && dateSortResults.length > 0) {
+        await dateSortResults && dateSortResults.filter((dataitem) => {
+          if (dataitem["Item Description"] === selectedItem) {
+            results.push(dataitem)
+          }
+        })
+        setShowDateSearch(false)
+
+      }
+      else {
+        if (unitSelectedResults.length > 0) {
+          await unitSelectedResults.filter((dataitem) => {
+            if (dataitem["Item Description"] === selectedItem) {
+              results.push(dataitem)
+            }
+          })
+        }
+      }
+    }
+    await setItemSelectedResults(results)
+    await getConsumption(results)
+    await setTotalResults(results.length)
+    const quantityUnit = getTotalQuantityByUnit(results)
+    setQtyBasedUnits(quantityUnit)
+  }
+
+  useEffect(() => {
+
+    return () => { }
+
+  }, [selectedUnit, units, searchTerm, qtyBasedUnits, totalresults])
 
   return (
     <div className='container-fluid'>
@@ -263,9 +347,7 @@ function App() {
         <div className="mb-3"><button type='button' onClick={submitFile} disabled={file2Name == null ? true : false} className='btn btn-info text-white' >Submit</button></div>
       </div>
 
-
       <div style={{ display: "flex" }}>
-
         {data2 && data2.length > 0 && (
           <div className='container'>
             <hr />
@@ -312,7 +394,7 @@ function App() {
             <span className='totalresults'>Total Results : {totalresults}</span>&nbsp;&nbsp;
             <span className='totalconsumption'>Total Sales Consumption :  {`${getQtyResults} Sales`}</span>
             <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
-              onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, searchResults, unitSelectedResults, dateSortResults, selectedUnit, getQtyResults, XLSX)}
+              onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, showItemSearch, searchResults, unitSelectedResults, dateSortResults, itemSelectedResults, selectedUnit, getQtyResults, XLSX)}
             >Download Results</button>
 
           </div>
@@ -349,20 +431,39 @@ function App() {
                 setDateRange(update);
               }}
               isClearable={true}
+              className="dateinput"
             />
             {
-              <button className='btn btn-secondary' disabled={startDate == null ? true : false}
+              <button className='btn btn-secondary' disabled={startDate === null ? true : false}
                 onClick={handleSelectedDate}>Sort by Date</button>
             }
           </div>
           <br />
+          <div className='filteritem'>
+            <h6>Filter Items: </h6>
+            <div className='filteritem-select'>
+              <select className="form-select" aria-label="select item"
+                value={selectedItem} onChange={(e) => setSelectedItem(e.target.value)}>
+                <option value="">Select...</option>
+                {
+                  selectItemOptions && selectItemOptions.length > 0 &&
+                  selectItemOptions.map((optionvalue, index) =>
+                    <option value={optionvalue} key={index}>{optionvalue}</option>
+                  )
+                }
+              </select>
+            </div>
+            <button className='btn btn-secondary'
+              onClick={handleSortByItem}>Sort</button>
+          </div>
           {
-            showCalculate && (
+            showCalculate && (Object.keys(qtyBasedUnits).length > 0) ?
               <div className="horizontal-list">
                 <h6>Total Counts :</h6>
                 <ul>
                   {
-                    qtyBasedUnits && Object.entries(qtyBasedUnits).map(([key, val], index) =>
+                    qtyBasedUnits && (Object.keys(qtyBasedUnits).length > 0) &&
+                    Object.entries(qtyBasedUnits).map(([key, val], index) =>
                       <div key={key} style={{ display: 'flex', marginBottom: '5px', alignItems: 'center', gap: '5px' }}>
                         <span style={{ fontWeight: 600 }}>{key} : {val.toFixed(2)}</span> &nbsp;
                         <input
@@ -372,6 +473,7 @@ function App() {
                           value={inputValues[key] || ''}
                           onChange={(event) => handleInputChange(event, key, val)}
                           min="0"
+                          className='dateinput'
                         />
                       </div>
                     )
@@ -381,13 +483,16 @@ function App() {
                   onClick={() => handleUnitCalculate()}>Calculate</button>
                 {totalUnitInKg > 0 ? <span className='totalconsumption'>Total Sales By Unit(Kg) : {totalUnitInKg}</span> : null}
               </div>
-            )
+              :
+              null
           }
+
+
 
           <hr />
           <div style={{ width: "1000px", height: "500px", overflow: 'scroll', marginBottom: '10%' }} className="table-responsive">
             {
-              showUnitSearch === true && showDateSearch === false && unitSelectedResults && unitSelectedResults.length > 0
+              showUnitSearch === true && showDateSearch === false && showItemSearch === false && unitSelectedResults && unitSelectedResults.length > 0
                 ?
                 <table className="table table-striped table-bordered">
                   <thead>
@@ -408,7 +513,7 @@ function App() {
                   </tbody>
                 </table>
                 :
-                showDateSearch
+                showDateSearch === true
                   ?
                   dateSortResults && dateSortResults.length > 0
                     ?
@@ -432,32 +537,57 @@ function App() {
                     </table>
                     :
                     <p className='noresult'>No Results Found!</p>
-
                   :
-                  <table className="table table-striped table-bordered">
-                    <thead>
-                      <tr>
-                        {Object.keys(searchResults[0]).map((header, index) => (
-                          <th key={index}>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {searchResults.map((search, index) => (
-                        <tr key={index}>
-                          {Object.values(search).map((cell, index) => (
-                            <td key={index}>{cell}</td>
+
+                  showItemSearch
+                    ?
+                    itemSelectedResults && itemSelectedResults.length > 0
+                      ?
+                      <table className="table table-striped table-bordered">
+                        <thead>
+                          <tr>
+                            {Object.keys(itemSelectedResults && itemSelectedResults[0]).map((header, index) => (
+                              <th key={index}>{header}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemSelectedResults && itemSelectedResults.map((search, index) => (
+                            <tr key={index}>
+                              {Object.values(search).map((cell, index) => (
+                                <td key={index}>{cell}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      :
+                      <p className='noresult'>No Results Found!</p>
+                    :
+                    <table className="table table-striped table-bordered">
+                      <thead>
+                        <tr>
+                          {Object.keys(searchResults[0]).map((header, index) => (
+                            <th key={index}>{header}</th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {searchResults.map((search, index) => (
+                          <tr key={index}>
+                            {Object.values(search).map((cell, index) => (
+                              <td key={index}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
             }
           </div>
         </div>
       )
         :
-        searchTerm && searchResults.length === 0
+        noresult
           ?
           <div style={{ marginBottom: '26%' }}>
             <h2>Search Results for "{searchTerm}"</h2>
@@ -467,7 +597,6 @@ function App() {
           :
           null
       }
-
     </div>
   )
 }
