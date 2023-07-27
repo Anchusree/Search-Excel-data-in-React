@@ -1,38 +1,38 @@
 
-export const DownloadExcelResults = (showUnitSearch,showDateSearch,searchResults,unitSelectedResults,dateSortResults,selectedUnit,getQtyResults,XLSX)=>{
+const keyRow =(results,getQtyResults)=>{
+
+    const keyValue = results && results.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
+        BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
+    }));
+    const lastRow = {
+        BranchName:'',ItemCode:'',ItemDescription:'',DocCode:'',DocDate:'',Customer:'',
+        Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
+    }
+    const newResult = [...keyValue, lastRow]
+    return newResult
+}
+
+
+export const DownloadExcelResults = (showUnitSearch,showDateSearch,showItemSearch,searchResults,unitSelectedResults,dateSortResults,itemSelectedResults,selectedUnit,getQtyResults,XLSX)=>{
     if (searchResults.length === 0) {
         return;
     }
-    let keyValues
-    let totalRow
+    let newResults
 
-    if(showUnitSearch === false || selectedUnit === "All") {
-        keyValues = searchResults && searchResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
-            BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
-        }));
-        totalRow = {
-            BranchName:'',ItemCode:'',ItemDescription:'',DocCode:'',DocDate:'',Customer:'',
-            Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
-        };
+    if(showUnitSearch === false && selectedUnit === "All" && showItemSearch === false) {
+        newResults = keyRow(searchResults,getQtyResults)
     }
-    else if(showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0 && showDateSearch === false){
-        keyValues = unitSelectedResults && unitSelectedResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
-            BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
-        }));
-        totalRow = {
-            BranchName:'',ItemCode:'',ItemDescription:'',DocCode:'',DocDate:'',Customer:'',
-            Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
-        };
+    else if(selectedUnit === "All" && showItemSearch === true){
+        newResults = keyRow(itemSelectedResults)
     }
-
-    else if(showDateSearch === true && dateSortResults && dateSortResults.length > 0){
-        keyValues = dateSortResults && dateSortResults.map(({"Branch Name":BranchName, ItemCode,"Item Description": ItemDescription, DocCode, DocDate, Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount }) => ({
-            BranchName,ItemCode,ItemDescription,DocCode,DocDate,Customer,Unit,Quantity,Rate,GrossAmount,Discount,NetAmount
-        }));
-        totalRow = {
-            BranchName:'',ItemCode:'',ItemDescription:'',DocCode:'',DocDate:'',Customer:'',
-            Unit:'',Quantity:getQtyResults,Rate:'',GrossAmount:'',Discount:'',NetAmount:''
-        };
+    else if(showUnitSearch === true && unitSelectedResults && unitSelectedResults.length > 0 && showDateSearch === false && showItemSearch === false){
+        newResults = keyRow(unitSelectedResults,getQtyResults)
+    }
+    else if(showDateSearch === true && dateSortResults && dateSortResults.length > 0 && showItemSearch === false){
+        newResults = keyRow(dateSortResults,getQtyResults)
+    }
+    else if(showItemSearch === true && itemSelectedResults && itemSelectedResults.length > 0){
+        newResults = keyRow(itemSelectedResults,getQtyResults)
     }
 
     const newData = [...keyValues, totalRow];

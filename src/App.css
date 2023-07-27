@@ -5,76 +5,105 @@
   margin: 0 auto;
   text-align: center;
 }
-.exceltable{
+
+.exceltable {
   width: 500px;
   height: 300px;
   overflow: scroll;
 }
-.countsales{
+
+.countsales {
   font-size: 18px;
   font-weight: 600;
   text-align: center;
   padding-left: 18px;
 }
-.searchfield{
+
+.searchfield {
   display: flex;
   justify-content: center;
 }
-.search-form-control{
-   display: block;
-    width: auto;
-    padding: .375rem .75rem;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.5;
-    color: var(--bs-body-color);
-    background-color: var(--bs-body-bg);
-    background-clip: padding-box;
-    border: var(--bs-border-width) solid var(--bs-border-color);
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    border-radius: var(--bs-border-radius);
-    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+
+.search-form-control {
+  display: block;
+  width: auto;
+  padding: .375rem .75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  background-clip: padding-box;
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: var(--bs-border-radius);
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
-.removefile{
+
+.removefile {
   border: none;
   background: none;
   font-size: 15px;
   color: red;
   font-family: cursive;
 }
-.totalresults{
+
+.totalresults {
   font-size: 18px;
   font-weight: 600;
   float: left;
 }
-.totalconsumption{
+
+.totalconsumption {
   font-size: 18px;
   font-weight: 600;
 }
-.noresult{
+
+.noresult {
   font-size: 25px;
   text-align: center;
   padding: 35px;
 }
-.head2{
+
+.head2 {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.horizontal-list{
+
+.horizontal-list {
   display: flex;
   justify-content: flex-start;
-  }
+  align-items: baseline
+}
+
 .horizontal-list li {
   /* display: inline; */
   margin-right: 10px;
   margin-bottom: 5px;
   border-radius: 3px;
 }
-.calculatebtn{
+
+.calculatebtn {
   width: fit-content;
   height: 40px;
   margin: 15px;
+}
+
+.filteritem {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  justify-content: flex-start;
+}
+.filteritem-select{
+  width: 50%;
+}
+.dateinput{
+  background-color: white;
+    border-radius: 3px;
+    padding: 4px;
+    border: 1px solid gray;
 }

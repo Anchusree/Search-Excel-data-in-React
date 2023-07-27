@@ -37,3 +37,24 @@ export const getTotalQuantityByUnit = (results)=>
       }, {});
 
 
+export const getUniqueUnits = (results)=>{
+    const uniqueUnitArray = new Set(results.map(item => item.Unit)); //get unique units
+    const uniqueUnitsArray = Array.from(uniqueUnitArray);// Convert the Set back to an array
+    return uniqueUnitsArray
+}
+
+export const getUniqueItems = (results)=>{
+    const uniqueItemArray = new Set(results.map(item => item["Item Description"])); //get unique units
+    const uniqueItemsArray = Array.from(uniqueItemArray);// Convert the Set back to an array
+    return uniqueItemsArray
+}
+
+export const getConsumptionResult = (results)=>{
+    const quantityResults = []
+    results.map((dataitem) => quantityResults.push(dataitem.Quantity))
+    let sum = quantityResults.reduce(function (a, b) {
+    return a + b;
+    })
+    return sum
+}
+
