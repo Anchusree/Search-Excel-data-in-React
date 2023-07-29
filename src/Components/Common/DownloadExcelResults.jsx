@@ -19,7 +19,7 @@ export const DownloadExcelResults = (showUnitSearch,showDateSearch,showItemSearc
     }
     let newResults
 
-    if(showUnitSearch === false && selectedUnit === "All" && showItemSearch === false) {
+    if(showUnitSearch === false && selectedUnit === "All" && showItemSearch === false && showDateSearch === false) {
         newResults = keyRow(searchResults,getQtyResults)
     }
     else if(selectedUnit === "All" && showItemSearch === true){
@@ -35,8 +35,7 @@ export const DownloadExcelResults = (showUnitSearch,showDateSearch,showItemSearc
         newResults = keyRow(itemSelectedResults,getQtyResults)
     }
 
-    const newData = [...keyValues, totalRow];
-    const worksheet = XLSX.utils.json_to_sheet(newData);
+    const worksheet = XLSX.utils.json_to_sheet(newResults);
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');

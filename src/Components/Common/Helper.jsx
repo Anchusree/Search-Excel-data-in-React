@@ -58,3 +58,9 @@ export const getConsumptionResult = (results)=>{
     return sum
 }
 
+export const getUniqueProducts = (results)=>{
+    const uniqueItemArray = new Set(results.map(item => item["Item Description"])); //get unique items
+    const uniqueItemsArray = Array.from(uniqueItemArray);// Convert the Set back to an array
+    const uniqueItemsWithChecked = uniqueItemsArray.map(item => ({ label:item,value:item }));
+    return uniqueItemsWithChecked;
+}
