@@ -333,6 +333,8 @@ function App() {
       if (selectedUnit === "All") {
         await setTotalResults(searchResults.length)
         await getConsumption(searchResults)
+        const quantityUnit = getTotalQuantityByUnit(searchResults)
+        await setQtyBasedUnits(quantityUnit)
       }
       else if (showUnitSearch) {
         await setTotalResults(unitSelectedResults.length)
