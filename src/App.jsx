@@ -3,9 +3,10 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { getConsumptionResult, getFormatDateString, getTotalQuantityByUnit, getUniqueItems, getUniqueUnits, isExcelFile } from './Components/Common/Helper';
+import { getConsumptionResult, getFormatDateString, getTotalQuantityByUnit, getUniqueProducts, getUniqueUnits, isExcelFile } from './Components/Common/Helper';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { MultiSelect } from "react-multi-select-component";
 
 function App() {
 
@@ -31,11 +32,11 @@ function App() {
   const [inputValues, setInputValues] = useState({});
   const [unitPerKgList, setUnitPerKgList] = useState({})
   const [totalUnitInKg, setTotalUnitInKg] = useState(0)
-  const [selectItemOptions, setSelectItemOptions] = useState([])
-  const [selectedItem, setSelectedItem] = useState('')
   const [itemSelectedResults, setItemSelectedResults] = useState([])
   const [showItemSearch, setShowItemSearch] = useState(false)
   const [noresult, setNoResult] = useState(false)
+  const [selected, setSelected] = useState([]);
+  const [options, setOptions] = useState([])
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -53,6 +54,7 @@ function App() {
   const handleSearch = async () => {
     await setUnitSelectedResults()
     await setShowCalculate(true)
+    await setSelected([])
     const results = []
     await data2.filter((dataitem) => {
       if (dataitem["Item Description"] &&
@@ -66,9 +68,9 @@ function App() {
       }
     })
     const uniqueUnitsArray = getUniqueUnits(results)
-    const uniqueItemsArray = getUniqueItems(results)
+    const uniqueProductsArray = getUniqueProducts(results)
 
-    await setSelectItemOptions(uniqueItemsArray)
+    await setOptions(uniqueProductsArray)
     await setUnits(uniqueUnitsArray)
     await setSearchResults(results)
     await setSelectedUnit("All")
@@ -78,12 +80,14 @@ function App() {
     if (selectedUnit === "All") {
       const quantityUnit = getTotalQuantityByUnit(results)
       setQtyBasedUnits(quantityUnit)
+      await setTotalResults(results.length)
     }
   }
   const getConsumption = async (results) => {
     if (results.length > 0) {
       const qtyresult = getConsumptionResult(results)
       await setQtyResults(qtyresult.toFixed(2))
+      await setTotalResults(results.length)
     }
     else {
       await setQtyResults(0)
@@ -114,8 +118,7 @@ function App() {
     setQtyResults(0)
     setShowItemSearch(false)
     setItemSelectedResults([])
-    setSelectedItem('')
-    setSelectItemOptions([])
+    setOptions([])
     setNoResult(false)
   }
 
@@ -125,13 +128,12 @@ function App() {
 
     await setShowDateSearch(false)
     await setShowItemSearch(false)
-    await setSelectedItem('')
     await setDateSortResults([])
     await setDateRange([null, null])
     await setInputValues({})
     await setTotalUnitInKg(0)
-    await setItemSelectedResults([])
-    await setSelectedItem('')
+    await setOptions([])
+    await setSelected([])
 
 
     if (selectedUnit === "All") {
@@ -139,9 +141,10 @@ function App() {
       getConsumption(searchResults)
       setShowCalculate(true)
       const quantityUnit = getTotalQuantityByUnit(searchResults)
-      setQtyBasedUnits(quantityUnit)
-      uniqueItemsOptions = getUniqueItems(searchResults)
-      setSelectItemOptions(uniqueItemsOptions)
+      await setQtyBasedUnits(quantityUnit)
+      uniqueItemsOptions = getUniqueProducts(searchResults)
+      await setOptions(uniqueItemsOptions)
+      await setTotalResults(searchResults.length)
     }
     else {
       setShowCalculate(false)
@@ -152,12 +155,12 @@ function App() {
           results.push(dataitem)
         }
       })
-      uniqueItemsOptions = getUniqueItems(results)
+      uniqueItemsOptions = getUniqueProducts(results)
       await setUnitSelectedResults(results)
       await setShowUnitSearch(true)
       await getConsumption(results)
       await setTotalResults(results.length)
-      await setSelectItemOptions(uniqueItemsOptions)
+      await setOptions(uniqueItemsOptions)
     }
   }
 
@@ -184,7 +187,7 @@ function App() {
     let uniqueItemOptions = null
     await setShowDateSearch(true)
     await setShowItemSearch(false)
-    await setSelectedItem('')
+    await setSelected([])
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
@@ -195,7 +198,7 @@ function App() {
           results.push(dataitem)
         }
       })
-      uniqueItemOptions = getUniqueItems(results)
+      uniqueItemOptions = getUniqueProducts(results)
     }
     else {
       if (showUnitSearch) {
@@ -207,7 +210,7 @@ function App() {
               results.push(dataitem)
             }
           })
-          uniqueItemOptions = getUniqueItems(results)
+          uniqueItemOptions = getUniqueProducts(results)
         }
       }
     }
@@ -215,7 +218,7 @@ function App() {
     await getConsumption(results)
     await setDateSortResults(results)
     await setTotalResults(results.length)
-    await setSelectItemOptions(uniqueItemOptions)
+    await setOptions(uniqueItemOptions)
     const quantityUnit = getTotalQuantityByUnit(results)
     await setQtyBasedUnits(quantityUnit)
   }
@@ -228,7 +231,6 @@ function App() {
         result[key] = unitPerKgList[key] * inputValues[key];
       }
     }
-
     let sum = 0;
     for (const key in result) {
       if (result.hasOwnProperty(key)) {
@@ -269,63 +271,85 @@ function App() {
     return false;
   };
 
-  const handleSortByItem = async () => {
-    await setShowItemSearch(true)
 
-    const results = []
-    if (selectedUnit === "All") {
-      if (showDateSearch) {
-        if (dateSortResults.length > 0) {
-          await dateSortResults && dateSortResults.filter((dataitem) => {
-            if (dataitem["Item Description"] === selectedItem) {
-              results.push(dataitem)
+
+  const handleSortProduct = async () => {
+
+    const selectedResults = []
+    if (selected.length > 0) {
+      await selected.map(select => selectedResults.push(select.value))
+
+      if (selectedResults.length > 0) {
+        await setShowItemSearch(true)
+        const results = []
+        if (selectedUnit === "All") {
+          if (showDateSearch) {
+            if (dateSortResults.length > 0) {
+              await dateSortResults && dateSortResults.filter((dataitem) => {
+                if (selectedResults.includes(dataitem["Item Description"])) {
+                  results.push(dataitem)
+                }
+              })
+              setShowDateSearch(false)
             }
-          })
-          setShowDateSearch(false)
-        }
-      }
-      else {
-        await searchResults.filter((dataitem) => {
-          if (dataitem["Item Description"] === selectedItem) {
-            results.push(dataitem)
           }
-        })
+          else {
+            await searchResults.filter((dataitem) => {
+              if (selectedResults.includes(dataitem["Item Description"])) {
+                results.push(dataitem)
+              }
+            })
+          }
+        }
+        else {
+          if (showDateSearch && dateSortResults.length > 0) {
+            await dateSortResults && dateSortResults.filter((dataitem) => {
+              if (selectedResults.includes(dataitem["Item Description"])) {
+                results.push(dataitem)
+              }
+            })
+            setShowDateSearch(false)
+          }
+          else {
+            if (unitSelectedResults.length > 0) {
+              await unitSelectedResults.filter((dataitem) => {
+                if (selectedResults.includes(dataitem["Item Description"])) {
+                  results.push(dataitem)
+                }
+              })
+            }
+          }
+        }
+        await setItemSelectedResults(results)
+        await getConsumption(results)
+        await setTotalResults(results.length)
+        const quantityUnit = getTotalQuantityByUnit(results)
+        await setQtyBasedUnits(quantityUnit)
       }
     }
-
     else {
-
-      if (showDateSearch && dateSortResults.length > 0) {
-        await dateSortResults && dateSortResults.filter((dataitem) => {
-          if (dataitem["Item Description"] === selectedItem) {
-            results.push(dataitem)
-          }
-        })
-        setShowDateSearch(false)
+      await setShowItemSearch(false)
+      await setItemSelectedResults([])
+      if (selectedUnit === "All") {
+        await setTotalResults(searchResults.length)
+        await getConsumption(searchResults)
+      }
+      else if (showUnitSearch) {
+        await setTotalResults(unitSelectedResults.length)
+        await getConsumption(unitSelectedResults)
 
       }
-      else {
-        if (unitSelectedResults.length > 0) {
-          await unitSelectedResults.filter((dataitem) => {
-            if (dataitem["Item Description"] === selectedItem) {
-              results.push(dataitem)
-            }
-          })
-        }
+      else if (showDateSearch) {
+        await setTotalResults(dateSortResults.length)
+        await getConsumption(dateSortResults)
       }
     }
-    await setItemSelectedResults(results)
-    await getConsumption(results)
-    await setTotalResults(results.length)
-    const quantityUnit = getTotalQuantityByUnit(results)
-    setQtyBasedUnits(quantityUnit)
   }
 
   useEffect(() => {
-
     return () => { }
-
   }, [selectedUnit, units, searchTerm, qtyBasedUnits, totalresults])
+
 
   return (
     <div className='container-fluid'>
@@ -396,11 +420,9 @@ function App() {
             <button className='btn btn-danger' disabled={totalresults > 0 ? false : true}
               onClick={() => DownloadExcelResults(showUnitSearch, showDateSearch, showItemSearch, searchResults, unitSelectedResults, dateSortResults, itemSelectedResults, selectedUnit, getQtyResults, XLSX)}
             >Download Results</button>
-
           </div>
           <br /><br />
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-
             <div className="form-check">
               <input className="form-check-input" type="radio" name="unit" id="all"
                 value="All" onChange={(e) => setSelectedUnit(e.target.value)} checked={selectedUnit === 'All'} />
@@ -441,21 +463,18 @@ function App() {
           <br />
           <div className='filteritem'>
             <h6>Filter Items: </h6>
-            <div className='filteritem-select'>
-              <select className="form-select" aria-label="select item"
-                value={selectedItem} onChange={(e) => setSelectedItem(e.target.value)}>
-                <option value="">Select...</option>
-                {
-                  selectItemOptions && selectItemOptions.length > 0 &&
-                  selectItemOptions.map((optionvalue, index) =>
-                    <option value={optionvalue} key={index}>{optionvalue}</option>
-                  )
-                }
-              </select>
-            </div>
+            <pre>{JSON.stringify(selected.value)}</pre>
+            <MultiSelect
+              options={options}
+              value={selected}
+              onChange={setSelected}
+              labelledBy="Select"
+              className="multiselect"
+            />
             <button className='btn btn-secondary'
-              onClick={handleSortByItem}>Sort</button>
+              onClick={handleSortProduct}>Sort by Item</button>
           </div>
+
           {
             showCalculate && (Object.keys(qtyBasedUnits).length > 0) ?
               <div className="horizontal-list">
@@ -486,8 +505,6 @@ function App() {
               :
               null
           }
-
-
 
           <hr />
           <div style={{ width: "1000px", height: "500px", overflow: 'scroll', marginBottom: '10%' }} className="table-responsive">
