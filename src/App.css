@@ -106,6 +106,7 @@
     border-radius: 3px;
     padding: 4px;
     border: 1px solid gray;
+    color: black;
 }
 .multiselect{
   width: 35%;
