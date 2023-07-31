@@ -87,3 +87,5 @@ export const calculateResult = (totalUnitInKg,operation,numValue) => {
     return calculatedResult.toFixed(3)
 
   };
+
+  
