@@ -111,3 +111,27 @@
 .multiselect{
   width: 35%;
 }
+.totalcalculate{
+  font-size: 16px;
+  font-weight: 600;
+}
+.calculatesubmit{
+  color: white;
+  background-color: darkcyan;
+  border: 1px solid darkcyan;
+  padding: 4px;
+  border-radius: 6px;
+  width: 75px;
+}
+.calculate{
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 0 !important;
+  margin: 10px;
+
+}
+.total{
+  font-size: 17px;
+  font-weight: 700;
+  color: darkcyan;
+}

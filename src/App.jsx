@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { DownloadExcelResults } from './Components/Common/DownloadExcelResults';
-import { getConsumptionResult, getFormatDateString, getTotalQuantityByUnit, getUniqueProducts, getUniqueUnits, isExcelFile } from './Components/Common/Helper';
+import { calculateResult, getConsumptionResult, getFormatDateString, getTotalQuantityByUnit, getUniqueProducts, getUniqueUnits, isExcelFile } from './Components/Common/Helper';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { MultiSelect } from "react-multi-select-component";
@@ -37,6 +37,9 @@ function App() {
   const [noresult, setNoResult] = useState(false)
   const [selected, setSelected] = useState([]);
   const [options, setOptions] = useState([])
+  const [calculateInput,setCalculateInput] = useState(0)
+  const [selectOperation,setSelectOperation] = useState('')
+  const[calculationResult,setCalculationResult] = useState(0)
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -52,7 +55,7 @@ function App() {
   }
 
   const handleSearch = async () => {
-    await setUnitSelectedResults()
+    await handleRemoveResults()
     await setShowCalculate(true)
     await setSelected([])
     const results = []
@@ -94,14 +97,9 @@ function App() {
     }
   }
 
-  const handleRemoveFile2 = () => {
-    setFile2Name(null)
-    fileRef2.current.value = ""
-    setData2([])
+  const handleRemoveResults = () => {
     setSearchResults([])
     setUnitSelectedResults([])
-    setFirst10Lines_F2([])
-    setSearchTerm('')
     setShowUnitSearch(false)
     setUnits()
     setSelectedUnit()
@@ -120,6 +118,20 @@ function App() {
     setItemSelectedResults([])
     setOptions([])
     setNoResult(false)
+    setCalculationResult(0)
+    setSelectOperation('')
+    setCalculateInput(0)
+  }
+
+  const handleRemoveFile2 = () => {
+    setFile2Name(null)
+    fileRef2.current.value = ""
+    setData2([])
+    setSearchResults([])
+    setUnitSelectedResults([])
+    setFirst10Lines_F2([])
+    setSearchTerm('')
+    handleRemoveResults()
   }
 
   const handleSelectedUnit = async () => {
@@ -223,12 +235,13 @@ function App() {
     await setQtyBasedUnits(quantityUnit)
   }
 
-  const handleUnitCalculate = () => {
+  const handleUnitCalculate = async () => {
+
     const result = {};
     for (const key in unitPerKgList) {
       if (unitPerKgList.hasOwnProperty(key) && inputValues.hasOwnProperty(key)) {
         // Multiply the values from both objects with the matching key
-        result[key] = unitPerKgList[key] * inputValues[key];
+        result[key] = unitPerKgList[key] * parseFloat(inputValues[key]);
       }
     }
     let sum = 0;
@@ -237,23 +250,25 @@ function App() {
         sum += result[key];
       }
     }
-    setTotalUnitInKg(sum.toFixed(2))
+    await setTotalUnitInKg(sum.toFixed(3))
   }
 
   const handleInputChange = (event, key, val) => {
     const updatedInputValues = { ...inputValues };
     if (key === "KG") {
-      updatedInputValues["KG"] = 1
+      updatedInputValues["KG"] = "1"
     }
     else {
-      if (updatedInputValues[key] !== "") {
+      if (updatedInputValues[key] !== "" && event.target.value === '' || /^\d+(\.\d*)?$/.test(event.target.value)) {
         updatedInputValues[key] = event.target.value
+
       }
       else {
         updatedInputValues[key] = null
       }
     }
     setInputValues(updatedInputValues);
+    //  console.log(inputValues,"inp");
     const updatedValues = { ...unitPerKgList };
     updatedValues[key] = val
     setUnitPerKgList(updatedValues)
@@ -345,6 +360,15 @@ function App() {
         await setTotalResults(dateSortResults.length)
         await getConsumption(dateSortResults)
       }
+    }
+  }
+
+  const handleTotalCalculation = () => {
+    if(selectOperation != '' && calculateInput > 0 && totalUnitInKg > 0){
+      const numValue = parseFloat(calculateInput);
+      const total = parseFloat(totalUnitInKg)
+      const totalResult = calculateResult(total,selectOperation,numValue)
+      setCalculationResult(totalResult)
     }
   }
 
@@ -502,7 +526,38 @@ function App() {
                 </ul>
                 <button type='submit' className='btn btn-success calculatebtn' disabled={areInputValuesValid()}
                   onClick={() => handleUnitCalculate()}>Calculate</button>
-                {totalUnitInKg > 0 ? <span className='totalconsumption'>Total Sales By Unit(Kg) : {totalUnitInKg}</span> : null}
+                {totalUnitInKg > 0 
+                ? 
+                <div>
+                    <span className='totalconsumption'>Total Sales By Unit(Kg) : {totalUnitInKg}</span> 
+                    <br/>
+                    <p className='calculate'>Calculate in Bucks:</p>
+                    <span className='totalcalculate'>{totalUnitInKg} &nbsp;
+                    <select style={{textAlign:'center',fontSize: '18px'}} value={selectOperation} onChange={(e)=>setSelectOperation(e.target.value)} >
+                      <option value="">Choose</option>
+                      <option value="+">+</option>
+                      <option value="-">-</option>
+                      <option value="*">*</option>
+                      <option value="/">/</option>
+                    </select>&nbsp;
+                    <input type='number' placeholder='Enter input value' min="0" style={{width: '145px'}} value={calculateInput} onChange={(e)=>setCalculateInput(e.target.value)}/>
+                    <input type='submit' value="Submit" className='calculatesubmit'onClick={handleTotalCalculation}/>
+                    </span>
+                    <br/>
+                    {
+                      calculationResult > 0
+                      ?
+                      <span className='total'>Total : {calculationResult}</span>
+                      :
+                      null
+                    }
+                </div>
+              
+                : 
+                null}
+
+                
+             
               </div>
               :
               null
