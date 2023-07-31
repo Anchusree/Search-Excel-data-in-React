@@ -64,3 +64,26 @@ export const getUniqueProducts = (results)=>{
     const uniqueItemsWithChecked = uniqueItemsArray.map(item => ({ label:item,value:item }));
     return uniqueItemsWithChecked;
 }
+
+export const calculateResult = (totalUnitInKg,operation,numValue) => {
+    let calculatedResult = 0;
+
+    switch (operation) {
+      case '+':
+        calculatedResult = totalUnitInKg + numValue;
+        break;
+      case '-':
+        calculatedResult = totalUnitInKg - numValue;
+        break;
+      case '*':
+        calculatedResult = totalUnitInKg * numValue;
+        break;
+      case '/':
+        calculatedResult = totalUnitInKg / numValue;
+        break;
+      default:
+        calculatedResult = 0;
+    }
+    return calculatedResult.toFixed(3)
+
+  };
