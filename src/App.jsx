@@ -200,6 +200,11 @@ function App() {
     await setShowDateSearch(true)
     await setShowItemSearch(false)
     await setSelected([])
+    await setCalculationResult(0)
+    await setSelectOperation('')
+    await setCalculateInput(0)
+    await setInputValues({})
+    await setTotalUnitInKg(0)
 
     if (selectedUnit === "All") {
       setShowUnitSearch(false)
@@ -268,7 +273,6 @@ function App() {
       }
     }
     setInputValues(updatedInputValues);
-    //  console.log(inputValues,"inp");
     const updatedValues = { ...unitPerKgList };
     updatedValues[key] = val
     setUnitPerKgList(updatedValues)
@@ -307,6 +311,7 @@ function App() {
               })
               setShowDateSearch(false)
             }
+            
           }
           else {
             await searchResults.filter((dataitem) => {
@@ -314,6 +319,10 @@ function App() {
                 results.push(dataitem)
               }
             })
+            await setTotalResults(searchResults.length)
+            await getConsumption(searchResults)
+            const quantityUnit = getTotalQuantityByUnit(searchResults)
+            await setQtyBasedUnits(quantityUnit)
           }
         }
         else {
@@ -340,11 +349,22 @@ function App() {
         await setTotalResults(results.length)
         const quantityUnit = getTotalQuantityByUnit(results)
         await setQtyBasedUnits(quantityUnit)
+        await setCalculationResult(0)
+        await setSelectOperation('')
+        await setCalculateInput(0)
+        await setInputValues({})
+        await setTotalUnitInKg(0)
+
       }
     }
     else {
       await setShowItemSearch(false)
       await setItemSelectedResults([])
+      await setCalculationResult(0)
+      await setSelectOperation('')
+      await setCalculateInput(0)
+      await setInputValues({})
+      await setTotalUnitInKg(0)
       if (selectedUnit === "All") {
         await setTotalResults(searchResults.length)
         await getConsumption(searchResults)
@@ -540,7 +560,7 @@ function App() {
                       <option value="*">*</option>
                       <option value="/">/</option>
                     </select>&nbsp;
-                    <input type='number' placeholder='Enter input value' min="0" style={{width: '145px'}} value={calculateInput} onChange={(e)=>setCalculateInput(e.target.value)}/>
+                    <input type='number' placeholder='Enter input value' min="0" value={calculateInput} onChange={(e)=>setCalculateInput(e.target.value)}/>
                     <input type='submit' value="Submit" className='calculatesubmit'onClick={handleTotalCalculation}/>
                     </span>
                     <br/>
