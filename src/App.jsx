@@ -37,9 +37,10 @@ function App() {
   const [noresult, setNoResult] = useState(false)
   const [selected, setSelected] = useState([]);
   const [options, setOptions] = useState([])
-  const [calculateInput,setCalculateInput] = useState(0)
-  const [selectOperation,setSelectOperation] = useState('')
-  const[calculationResult,setCalculationResult] = useState(0)
+  const [calculateInput, setCalculateInput] = useState(0)
+  const [selectOperation, setSelectOperation] = useState('')
+  const [calculationResult, setCalculationResult] = useState(0)
+  const [message, setMessage] = useState('')
 
   const handleFileUpload2 = (e) => {
     const file = e.target.files[0];
@@ -55,6 +56,13 @@ function App() {
   }
 
   const handleSearch = async () => {
+
+    if (searchTerm.trim().length < 3) {
+      await setMessage("Search should not be less than 3 characters")
+      return
+    }
+
+    await setMessage('')
     await handleRemoveResults()
     await setShowCalculate(true)
     await setSelected([])
@@ -86,6 +94,8 @@ function App() {
       await setTotalResults(results.length)
     }
   }
+
+
   const getConsumption = async (results) => {
     if (results.length > 0) {
       const qtyresult = getConsumptionResult(results)
@@ -311,7 +321,7 @@ function App() {
               })
               setShowDateSearch(false)
             }
-            
+
           }
           else {
             await searchResults.filter((dataitem) => {
@@ -384,18 +394,41 @@ function App() {
   }
 
   const handleTotalCalculation = () => {
-    if(selectOperation != '' && calculateInput > 0 && totalUnitInKg > 0){
+    if (selectOperation != '' && calculateInput > 0 && totalUnitInKg > 0) {
       const numValue = parseFloat(calculateInput);
       const total = parseFloat(totalUnitInKg)
-      const totalResult = calculateResult(total,selectOperation,numValue)
+      const totalResult = calculateResult(total, selectOperation, numValue)
       setCalculationResult(totalResult)
     }
   }
 
+  function renderTable(headers, data) {
+    return (
+      <table className="table table-striped table-bordered">
+        <thead>
+          <tr>
+            {headers.map((header, index) => (
+              <th key={index}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, index) => (
+            <tr key={index}>
+              {Object.values(row).map((cell, index) => (
+                <td key={index}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  
   useEffect(() => {
     return () => { }
   }, [selectedUnit, units, searchTerm, qtyBasedUnits, totalresults])
-
 
   return (
     <div className='container-fluid'>
@@ -430,27 +463,8 @@ function App() {
                 <button className="input-group-text btn btn-primary" onClick={handleSearch} disabled={searchTerm == "" ? true : false}>Search</button>
               </div>
             </div>
+            {message && <p style={{ margin: '8px', color: 'red' }}>{message}</p>}
             <br />
-            <div style={{ width: "1000px", height: "300px", overflow: 'scroll', marginBottom: '5%' }} className='table-responsive'>
-              <table className="table table-striped table-bordered">
-                <thead>
-                  <tr>
-                    {Object.keys(first10Lines_F2[0]).map((key) => (
-                      <th key={key}>{key}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {first10Lines_F2.map((row, index) => (
-                    <tr key={index}>
-                      {Object.values(row).map((value, index) => (
-                        <td key={index}>{value}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
       </div>
@@ -546,89 +560,52 @@ function App() {
                 </ul>
                 <button type='submit' className='btn btn-success calculatebtn' disabled={areInputValuesValid()}
                   onClick={() => handleUnitCalculate()}>Calculate</button>
-                {totalUnitInKg > 0 
-                ? 
-                <div>
-                    <span className='totalconsumption'>Total Sales By Unit(Kg) : {totalUnitInKg}</span> 
-                    <br/>
+                {totalUnitInKg > 0
+                  ?
+                  <div>
+                    <span className='totalconsumption'>Total Sales By Unit( in Kg) : <span style={{ color: '#146c43' }}>{totalUnitInKg}</span></span>
+                    <br />
                     <p className='calculate'>Calculate in Bucks:</p>
                     <span className='totalcalculate'>{totalUnitInKg} &nbsp;
-                    <select style={{textAlign:'center',fontSize: '18px'}} value={selectOperation} onChange={(e)=>setSelectOperation(e.target.value)} >
-                      <option value="">Choose</option>
-                      <option value="+">+</option>
-                      <option value="-">-</option>
-                      <option value="*">*</option>
-                      <option value="/">/</option>
-                    </select>&nbsp;
-                    <input type='number' placeholder='Enter input value' min="0" value={calculateInput} onChange={(e)=>setCalculateInput(e.target.value)}/>
-                    <input type='submit' value="Submit" className='calculatesubmit'onClick={handleTotalCalculation}/>
+                      <select style={{ textAlign: 'center', fontSize: '18px' }} value={selectOperation} onChange={(e) => setSelectOperation(e.target.value)} >
+                        <option value="">Choose</option>
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                        <option value="*">*</option>
+                        <option value="/">/</option>
+                      </select>&nbsp;
+                      <input type='number' placeholder='Enter input value' min="0" value={calculateInput} onChange={(e) => setCalculateInput(e.target.value)} />
+                      <input type='submit' value="Submit" className='calculatesubmit' onClick={handleTotalCalculation} />
                     </span>
-                    <br/>
+                    <br />
                     {
                       calculationResult > 0
-                      ?
-                      <span className='total'>Total : {calculationResult}</span>
-                      :
-                      null
+                        ?
+                        <span className='totalconsumption'>Total : <span style={{ color: 'darkcyan' }}>{calculationResult}</span></span>
+                        :
+                        null
                     }
-                </div>
-              
-                : 
-                null}
-
-                
-             
+                  </div>
+                  :
+                  null
+                }
               </div>
               :
               null
           }
 
           <hr />
-          <div style={{ width: "1000px", height: "500px", overflow: 'scroll', marginBottom: '10%' }} className="table-responsive">
+          <div style={{ width: "1000px", height: "500px", overflow: 'auto', marginBottom: '13%' }} className="table-responsive">
             {
               showUnitSearch === true && showDateSearch === false && showItemSearch === false && unitSelectedResults && unitSelectedResults.length > 0
                 ?
-                <table className="table table-striped table-bordered">
-                  <thead>
-                    <tr>
-                      {Object.keys(unitSelectedResults[0]).map((header, index) => (
-                        <th key={index}>{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unitSelectedResults.map((search, index) => (
-                      <tr key={index}>
-                        {Object.values(search).map((cell, index) => (
-                          <td key={index}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                renderTable(Object.keys(unitSelectedResults[0]), unitSelectedResults)
                 :
                 showDateSearch === true
                   ?
                   dateSortResults && dateSortResults.length > 0
                     ?
-                    <table className="table table-striped table-bordered">
-                      <thead>
-                        <tr>
-                          {Object.keys(dateSortResults && dateSortResults[0]).map((header, index) => (
-                            <th key={index}>{header}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {dateSortResults && dateSortResults.map((search, index) => (
-                          <tr key={index}>
-                            {Object.values(search).map((cell, index) => (
-                              <td key={index}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    renderTable(Object.keys(dateSortResults[0]), dateSortResults)
                     :
                     <p className='noresult'>No Results Found!</p>
                   :
@@ -637,45 +614,12 @@ function App() {
                     ?
                     itemSelectedResults && itemSelectedResults.length > 0
                       ?
-                      <table className="table table-striped table-bordered">
-                        <thead>
-                          <tr>
-                            {Object.keys(itemSelectedResults && itemSelectedResults[0]).map((header, index) => (
-                              <th key={index}>{header}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {itemSelectedResults && itemSelectedResults.map((search, index) => (
-                            <tr key={index}>
-                              {Object.values(search).map((cell, index) => (
-                                <td key={index}>{cell}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      renderTable(Object.keys(itemSelectedResults[0]), itemSelectedResults)
                       :
                       <p className='noresult'>No Results Found!</p>
                     :
-                    <table className="table table-striped table-bordered">
-                      <thead>
-                        <tr>
-                          {Object.keys(searchResults[0]).map((header, index) => (
-                            <th key={index}>{header}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {searchResults.map((search, index) => (
-                          <tr key={index}>
-                            {Object.values(search).map((cell, index) => (
-                              <td key={index}>{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    renderTable(Object.keys(searchResults[0]), searchResults)
+                    
             }
           </div>
         </div>
@@ -684,12 +628,16 @@ function App() {
         noresult
           ?
           <div style={{ marginBottom: '26%' }}>
-            <h2>Search Results for "{searchTerm}"</h2>
+            <h3>Search Results for "{searchTerm}"</h3>
             <br />
             <p className='noresult'>No Results Found!</p>
           </div>
           :
-          null
+          data2 && data2.length > 0 && (
+            <div style={{ width: "1000px", height: "300px", overflow: 'auto', marginBottom: '5%' }} className='table-responsive'>
+              {renderTable(Object.keys(first10Lines_F2[0]), first10Lines_F2)}
+            </div>
+          )
       }
     </div>
   )
