@@ -447,7 +447,9 @@ function App() {
             </>
           )}
         </div>
-        <div className="mb-3"><button type='button' onClick={submitFile} disabled={file2Name == null ? true : false} className='btn btn-info text-white' >Submit</button></div>
+        <div className="mb-3">
+          <button type='button' onClick={submitFile} disabled={file2Name == null ? true : false} className='btn btn-info text-white' >Submit</button>
+        </div>
       </div>
 
       <div style={{ display: "flex" }}>
@@ -565,7 +567,7 @@ function App() {
                   <div>
                     <span className='totalconsumption'>Total Sales By Unit( in Kg) : <span style={{ color: '#146c43' }}>{totalUnitInKg}</span></span>
                     <br />
-                    <p className='calculate'>Calculate in Bucks:</p>
+                    <p className='calculate'>Calculate in Box:</p>
                     <span className='totalcalculate'>{totalUnitInKg} &nbsp;
                       <select style={{ textAlign: 'center', fontSize: '18px' }} value={selectOperation} onChange={(e) => setSelectOperation(e.target.value)} >
                         <option value="">Choose</option>
